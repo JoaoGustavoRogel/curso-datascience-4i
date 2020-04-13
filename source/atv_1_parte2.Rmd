@@ -26,7 +26,7 @@ source("./source/multiplot.R")
 (A) Carregando base, aqui deve-se tomar o cuidado de tratar os nomes das variáveis, transformar o tipo das datas, além de escolher o cabeçalho corretamente
 
 ```{r}
-data <- readxl::read_excel(path = "../inputs/retail.xlsx", range = "A2:GH383") %>% 
+data <- readxl::read_excel(path = "./inputs/retail.xlsx", range = "A2:GH383") %>% 
   janitor::clean_names() %>% 
   dplyr::mutate(date = as.Date(series_id)) %>%
   dplyr::select(-series_id)
@@ -71,16 +71,19 @@ A partir das visualizações obtidas da série, é possível observar que a mesm
 
 ```{r}
 data_fit <- seasonal::seas(data_ts, x11 = "")
+```
 
+Plotando o resultado
+```{r}
 data_fit %>% forecast::autoplot()
-
 p <- data_fit %>% as.data.frame() %>% 
       ggplot(aes(x = date, y = final)) + 
       geom_line() +
-      labs(title = "Série decomposta com método")
+      labs(title = "Série decomposta com o método X11")
 
-plot(data_fit)
+ggplotly(p)
 
 ```
 
+Alguns pequenos outliers apareceram, como por exemplo na data 2009-11.
 
