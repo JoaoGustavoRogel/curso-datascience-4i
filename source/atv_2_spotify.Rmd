@@ -1,0 +1,166 @@
+---
+title: "Lista Análise Exploratória de Dados com R"
+author: "João Gustavo Rogel"
+output:
+  html_document:
+    df_print: paged
+---
+
+Importando bibliotecas que serão utilizadas
+
+```{r message=FALSE, warning=FALSE}
+library(xts)
+library(dplyr)
+library(purrr)
+library(stats)
+library(plotly)
+library(janitor)
+library(ggplot2)
+library(seasonal)
+library(forecast)
+library(lubridate)
+source("multiplot.R")
+```
+
+Carregando a base do Spotify
+
+```{r message=FALSE, warning=FALSE}
+data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-01-21/spotify_songs.csv')
+```
+
+Plotando popularidade de cada um dos gêneros presentes na base
+
+```{r message=FALSE, warning=FALSE}
+popularity_genre <- data %>% 
+  dplyr::group_by(playlist_genre) %>% 
+  dplyr::summarise(popularity = mean(track_popularity)) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(playlist_genre = as.factor(playlist_genre))
+
+p <- popularity_genre %>% 
+  ggplot(aes(x = playlist_genre, y = popularity, fill = playlist_genre)) + 
+  geom_bar(colour="black", stat="identity") +
+  labs(title = "Popularidade dos gêneros", y = "Popularidade", x = "Gênero")
+  
+ggplotly(p)
+```
+
+Apresentando tempo médio de cada gênero
+
+```{r message=FALSE, warning=FALSE}
+duration_genre <- data %>% 
+  dplyr::group_by(playlist_genre) %>% 
+  dplyr::summarise(duration = mean(duration_ms)/1000) %>% 
+  dplyr::ungroup() %>%
+  dplyr::mutate(playlist_genre = as.factor(playlist_genre))
+
+p <- duration_genre %>% 
+  ggplot(aes(x = playlist_genre, y = duration, fill = playlist_genre)) + 
+  geom_bar(colour="black", stat="identity") +
+  labs(title = "Duração média dos gêneros", y = "Duração (s)", x = "Gênero")
+  
+ggplotly(p)
+```
+
+
+Correlacionando algumas variáveis da base
+```{r}
+calc_indice <- function(x) {
+  y <- x
+  y[1] <- 100
+  for(i in 2:length(x)) {
+    y[i] <- (x[i]/x[i-1]) * y[i-1]
+  }
+  return(y)
+}
+
+
+data_correl <- data %>% 
+  dplyr::group_by(playlist_genre) %>% 
+  dplyr::summarise(duration = mean(duration_ms)/1000,
+                   danceability = mean(danceability),
+                   energy = mean(energy),
+                   loudness = mean(loudness),
+                   speechiness = mean(speechiness),
+                   instrumentalness = mean(instrumentalness),
+                   duration = mean(duration),
+                   popularity = mean(track_popularity)) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::select(-playlist_genre) %>% 
+  purrr::map_df(function(x) x %>% calc_indice())
+
+correl <- stats::cor(data_correl)  
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+print(correl)
+corrplot::corrplot(correl,
+                   type = "upper",
+                   tl.col = "black",
+                   method = "number",
+                   bg = "lightblue")
+
+```
+
+Evolução de popularidade ao longos dos anos de cada gênero
+
+```{r fig.height=5, fig.width=10, message=FALSE, warning=FALSE}
+data_evolution_popularity <- data %>% 
+  dplyr::mutate(year = lubridate::year(as.Date(track_album_release_date))) %>% 
+  dplyr::group_by(year, playlist_genre) %>% 
+  dplyr::summarise(popularity = mean(track_popularity)) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(playlist_genre = as.factor(playlist_genre))
+```
+
+
+```{r echo=FALSE, fig.height=5, fig.width=10, message=FALSE, warning=FALSE}
+p1 <- data_evolution_popularity %>%
+  dplyr::filter(playlist_genre == "edm") %>% 
+  ggplot() +
+  geom_line(aes(x = year, y = popularity)) +
+  labs(title = "Popularidade ao longo dos anos - edm", x = "", y = "")
+
+p2 <- data_evolution_popularity %>%
+  dplyr::filter(playlist_genre == "latin") %>% 
+  ggplot() +
+  geom_line(aes(x = year, y = popularity)) +
+  labs(title = "Popularidade ao longo dos anos - latin", x = "", y = "")
+
+p3 <- data_evolution_popularity %>%
+  dplyr::filter(playlist_genre == "pop") %>% 
+  ggplot() +
+  geom_line(aes(x = year, y = popularity)) +
+  labs(title = "Popularidade ao longo dos anos - pop", x = "", y = "")
+
+p4 <- data_evolution_popularity %>%
+  dplyr::filter(playlist_genre == "r&b") %>% 
+  ggplot() +
+  geom_line(aes(x = year, y = popularity)) +
+  labs(title = "Popularidade ao longo dos anos - r&b", x = "", y = "")
+
+p5 <- data_evolution_popularity %>%
+  dplyr::filter(playlist_genre == "rap") %>% 
+  ggplot() +
+  geom_line(aes(x = year, y = popularity)) +
+  labs(title = "Popularidade ao longo dos anos - rap", x = "", y = "")
+
+p6 <- data_evolution_popularity %>%
+  dplyr::filter(playlist_genre == "rock") %>% 
+  ggplot() +
+  geom_line(aes(x = year, y = popularity)) +
+  labs(title = "Popularidade ao longo dos anos - rock", x = "", y = "")
+
+multiplot(p1, p2)
+multiplot(p3, p4)
+multiplot(p5, p6)
+```
+
+
+
+
+
+
+
+
+
