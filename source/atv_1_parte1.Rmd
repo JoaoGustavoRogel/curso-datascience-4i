@@ -22,22 +22,13 @@ source("./source/multiplot.R")
 Carregando base e melhorando nome das colunas
 
 ```{r message=FALSE, warning=FALSE}
-base::load("../inputs/us_change.rda")
+base::load("./inputs/us_change.rda")
 data <- us_change %>% janitor::clean_names()
 ```
 
-(A) Calculando número índice de todas as variáveis, para isto foram criadas duas funções para auxiliar nos cálculos
+(A) Calculando número índice de todas as variáveis, para isto foi criado uma função para auxiliar nos cálculos
 
 ```{r}
-calc_indice <- function(x) {
-  y <- x
-  y[1] <- 100
-  for(i in 2:length(x)) {
-    y[i] <- (x[i]/x[i-1]) * y[i-1]
-  }
-  return(y)
-}
-
 calc_indice_variacao <- function(x) {
   y <- x
   y[1] <- 100
@@ -165,7 +156,7 @@ corrplot::corrplot(correl,
                    bg = "lightblue")
 ```
 
-Como pode-se perceber a correlação em ambos os casos foi a mesma, isto ocorre pois as duas bases estão com suas variáveis em nível, desse modo não existe diferença em calcular a correlação com as variáveis em número índice e em taxa de variação.
+Como pode-se perceber a correlação em ambos os casos foi diferente, isto ocorre pois as duas bases estão com suas variáveis em níveis diferentes, no caso da base com as variáveis em taxa de variação estão sendo correlacionadas informações em escalas diferentes, desse modo a correlação não estará correta.
 
 (C) Criando visualizações para ajudar no entendimento sobre a dinâmica das variáveis
 
