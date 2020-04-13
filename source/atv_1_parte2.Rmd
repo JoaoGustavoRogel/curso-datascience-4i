@@ -1,5 +1,5 @@
 ---
-title: "Lista Análise Exploratória de Dados com R"
+title: "Lista Análise Exploratória de Dados com R - Parte 1 - 2"
 author: "João Gustavo Rogel"
 output:
   html_document:
@@ -20,7 +20,7 @@ library(ggplot2)
 library(seasonal)
 library(forecast)
 library(lubridate)
-source("multiplot.R")
+source("./source/multiplot.R")
 ```
 
 (A) Carregando base, aqui deve-se tomar o cuidado de tratar os nomes das variáveis, transformar o tipo das datas, além de escolher o cabeçalho corretamente

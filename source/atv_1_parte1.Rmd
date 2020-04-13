@@ -1,5 +1,5 @@
 ---
-title: "Lista Análise Exploratória de Dados com R"
+title: "Lista Análise Exploratória de Dados com R - Parte 1 - 1"
 author: "João Gustavo Rogel"
 output:
   html_document:
@@ -16,7 +16,7 @@ library(plotly)
 library(janitor)
 library(ggplot2)
 library(corrplot)
-source("multiplot.R")
+source("./source/multiplot.R")
 ```
 
 Carregando base e melhorando nome das colunas
