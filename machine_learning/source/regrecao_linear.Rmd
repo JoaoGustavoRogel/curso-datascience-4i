@@ -1,0 +1,220 @@
+---
+title: "Machine Learning - Regressão Linear"
+author: "João Gustavo Rogel"
+output:
+  html_document:
+    df_print: paged
+---
+
+Carregando bibliotecas
+
+```{r message=FALSE, warning=FALSE}
+library(DT)
+library(MASS)
+library(dplyr)
+library(stats)
+library(plotly)
+library(readxl)
+library(caTools)
+library(ggplot2)
+library(corrplot)
+library(reticulate)
+```
+
+### Exercícios de Múltipla Escolha
+```{r echo=FALSE}
+res_x <- data.frame("Q1" =  c("C"),
+                    "Q2" =  c("A"),
+                    "Q3" =  c("C"),
+                    "Q4" =  c("D"),
+                    "Q5" =  c("B"),
+                    "Q6" =  c("B"),
+                    "Q7" =  c("D"),
+                    "Q8" =  c("B"),
+                    "Q9" =  c("A"),
+                    "Q10" = c("C")
+                    )
+
+datatable(res_x, rownames = FALSE)
+```
+
+#### Funções úteis
+```{r message=FALSE, warning=FALSE}
+# Gradiente Descendente
+gradiente_descendente <- function(df, teta, taxa_aprendizado, iteracoes) {
+  x <- df$x
+  y <- df$y
+  m = length(y)
+  
+  for (i in 1:iteracoes) {
+    h = teta[1] + teta[2] * x
+    t0 = teta[1] - taxa_aprendizado*(1/m)*sum((h - y))
+    t1 = teta[2] - taxa_aprendizado*(1/m)*sum((h - y)*x)
+    teta  = c(t0, t1)
+  }                         
+  
+  return(teta)
+}
+
+# Normaliza DF
+normaliza_df <- function(df) {
+  maximo <- apply(df, 2, max) 
+  minimo <- apply(df, 2, min)
+  
+  res <- as.data.frame(scale(df, center = minimo, scale = maximo - minimo))
+  return(res)
+}
+```
+
+
+### Exercício Computacional - 1
+```{r warning=FALSE}
+# Leitura DF
+df <- read.table("data_computacional_1.txt", sep = ",") %>% 
+  rename(population = V1,
+         profit = V2)
+
+# Análise Exploratória Simples
+p <- df %>% 
+  ggplot(aes(x = population, y = profit)) +
+  geom_line()
+
+ggplotly(p)
+
+# Criando Modelo
+modelo <- lm("profit ~ population", data = df)
+modelo
+
+# Predições
+predi <- predict(modelo, df)
+
+# Resíduos
+residuos <- modelo$residuals
+media_residuos <- residuos %>% mean()
+media_residuos
+
+# Predição para 100,000 habitantes
+predicao <- predict(modelo, data.frame(population = 100000/10000)) * 10000
+predicao
+
+# Utilizando o Gradiente Descendente
+df_gd <- df %>% rename(x = population, y = profit)
+parametros_gd <- gradiente_descendente(df_gd, c(0, 0), 0.001, 20000)
+parametros_gd
+
+# Utilizando Equações Normais
+unit_col <- replicate(nrow(df), 1)
+
+X = data.frame(unit_col, df$population) %>% 
+  as.matrix()
+
+tetas_eqn = solve(t(X) %*% X) %*% (t(X) %*% df$profit) 
+c(tetas_eqn[[1]], tetas_eqn[[2]])
+```
+Como esperado os parâmetros obtidos foram os mesmos, desconsiderando diferenças
+geradas por aproximações
+
+
+### Exercício Computacional - 2
+```{r warning=FALSE}
+# Leitura do DF
+df <- MASS::Boston
+
+# Simples Análise Exploratória
+p <- df %>% 
+  ggplot(aes(x = lstat, y = medv)) +
+  geom_point()
+
+ggplotly(p)
+
+
+# Criação do Modelo
+modelo <- lm("medv ~ lstat", data = df)
+modelo
+
+# Predições
+predi <- predict(modelo, dplyr::select(df, lstat))
+
+# Média dos resíduos
+residuos <- modelo$residuals
+media_residuos <- residuos %>% mean()
+media_residuos
+
+# Predição para 25%
+predicao <- predict(modelo, data.frame(lstat = c(25))) * 1000
+predicao
+
+# Utilizando Gradiente Descendente
+df_gd <- df %>% 
+  dplyr::select(medv, lstat) %>% 
+  dplyr::rename(x = lstat, y = medv)
+
+tetas_gd <- gradiente_descendente(df_gd, c(0, 0), 0.001, 200000)
+tetas_gd
+
+# Utilizando Equações Normais
+unit_col <- replicate(nrow(df), 1)
+
+X = data.frame(unit_col, df$lstat) %>% 
+  as.matrix()
+
+tetas_eqn = solve(t(X) %*% X) %*% (t(X) %*% df$medv) 
+c(tetas_eqn[[1]], tetas_eqn[[2]])
+
+```
+Como esperado os parâmetros obtidos foram os mesmos, desconsiderando diferenças
+geradas por aproximações
+
+
+### Exercício Computacional - 3
+```{r warning=FALSE}
+# Leitura e filtragem do DF
+df <- MASS::Boston %>%
+  dplyr::select(c("crim", "rm", "lstat", "medv"))
+
+# Aplicando Normalização
+df_norm <- normaliza_df(df)
+
+# Simples Análise Exploratória
+cor <- stats::cor(df)
+corrplot(cor,
+         type = "upper",
+         tl.col = "black",
+         method = "number",
+         bg = "lightblue")
+```
+
+```{r echo=FALSE, warning=FALSE}
+p <- df %>% 
+  ggplot(aes(x = medv, y = crim)) +
+  geom_point()
+
+ggplotly(p)
+
+p <- df %>% 
+  ggplot(aes(x = medv, y = rm)) +
+  geom_point()
+
+ggplotly(p)
+
+p <- df %>% 
+  ggplot(aes(x = medv, y = lstat)) +
+  geom_point()
+
+ggplotly(p)
+```
+
+```{r warning=FALSE}
+# Criação do Modelo
+modelo <- lm("medv ~ crim + rm + lstat", data = df_norm)
+modelo
+# Resíduos
+
+
+```
+
+
+
+
+
+

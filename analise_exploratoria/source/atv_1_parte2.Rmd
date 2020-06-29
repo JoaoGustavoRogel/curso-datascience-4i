@@ -1,0 +1,89 @@
+---
+title: "Lista Análise Exploratória de Dados com R - Parte 1 - 2"
+author: "João Gustavo Rogel"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+Importando bibliotecas que serão utilizadas
+
+```{r message=FALSE, warning=FALSE}
+library(xts)
+library(dplyr)
+library(purrr)
+library(stats)
+library(plotly)
+library(janitor)
+library(ggplot2)
+library(seasonal)
+library(forecast)
+library(lubridate)
+source("./source/multiplot.R")
+```
+
+(A) Carregando base, aqui deve-se tomar o cuidado de tratar os nomes das variáveis, transformar o tipo das datas, além de escolher o cabeçalho corretamente
+
+```{r}
+data <- readxl::read_excel(path = "./inputs/retail.xlsx", range = "A2:GH383") %>% 
+  janitor::clean_names() %>% 
+  dplyr::mutate(date = as.Date(series_id)) %>%
+  dplyr::select(-series_id)
+```
+
+(B) Convertendo a variável "a3349398a" para time series
+
+```{r}
+data_ts <- data$a3349398a %>% 
+  stats::ts(
+    start = c(
+      lubridate::year(dplyr::first(data$date)),
+      lubridate::month(dplyr::first(data$date))
+    ),
+    end = c(
+      lubridate::year(dplyr::last(data$date)),
+      lubridate::month(dplyr::last(data$date))
+    ),
+    frequency = 12
+  )
+```
+
+(C) Explorando a série escolhida
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data_ts %>% 
+  forecast::ggseasonplot() + labs(title = "")
+
+data_ts %>% 
+  forecast::ggmonthplot() + labs(title = "")
+
+data_ts %>% 
+  ggplot(aes(x = data$date, y = .)) + 
+  geom_line() +
+  labs(x = "Date")
+
+```
+
+A partir das visualizações obtidas da série, é possível observar que a mesma apresenta uma tendência de crescimento linear, alguns poucos ciclos e bastante sazonalidade.
+
+(D) Decompondo a série utilizando o método X11
+
+```{r}
+data_fit <- seasonal::seas(data_ts, x11 = "")
+```
+
+Plotando o resultado
+```{r}
+data_fit %>% forecast::autoplot()
+p <- data_fit %>% as.data.frame() %>% 
+      ggplot(aes(x = date, y = final)) + 
+      geom_line() +
+      labs(title = "Série decomposta com o método X11")
+
+ggplotly(p)
+
+```
+
+Alguns pequenos outliers apareceram, como por exemplo na data 2009-11.
+
