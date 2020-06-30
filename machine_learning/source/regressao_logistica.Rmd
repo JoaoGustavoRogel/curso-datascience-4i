@@ -1,0 +1,148 @@
+---
+title: "Machine Learning - Regressão Logística"
+author: "João Gustavo Rogel"
+output:
+  html_document:
+    df_print: paged
+---
+
+Carregando bibliotecas
+
+```{r message=FALSE, warning=FALSE}
+library(DT)
+library(ROCR)
+library(MASS)
+library(caret)
+library(dplyr)
+library(stats)
+library(plotly)
+library(readxl)
+library(caTools)
+library(ggplot2)
+library(corrplot)
+library(varhandle)
+```
+
+
+### Exercícios de Múltipla Escolha
+```{r echo=FALSE}
+res_x <- data.frame("Q1" =  c("D"),
+                    "Q2" =  c("C"),
+                    "Q3" =  c("C"),
+                    "Q4" =  c("C"),
+                    "Q5" =  c("A"),
+                    "Q6" =  c("C"),
+                    "Q7" =  c("C")
+                    )
+datatable(res_x, rownames = FALSE)
+```
+
+
+### Exercício Computacional - 1
+```{r warning=FALSE}
+set.seed(12)
+
+# Leitura e Filtragem dos dados
+df <- iris
+especies_b <- to.dummy(iris$Species, "species") %>% as.data.frame()
+
+especies <- especies_b$species.virginica
+df <- data.frame(df[, 1:4], especies) %>% 
+  dplyr::mutate(especies = as.factor(especies))
+  
+# Divisão dos dados para treino e teste - 90/10
+divisao_df = sample.split(df$especies, SplitRatio = 0.90)
+df_treino = subset(df, divisao_df == TRUE)
+df_teste = subset(df, divisao_df == FALSE)
+
+# Gráficos de dispersão
+p <- df_treino %>% 
+  ggplot(aes(x = Petal.Length, y = Petal.Width, color = especies)) +
+  geom_point() +
+  ggtitle("DF Treino")
+ggplotly(p)
+
+p <- df_teste %>% 
+  ggplot(aes(x = Petal.Length, y = Petal.Width, color = especies)) +
+  geom_point() +
+  ggtitle("DF Teste")
+ggplotly(p)
+
+
+# Construção do modelo
+modelo <- glm("especies ~ .", data = df_treino, family = "binomial")
+modelo
+
+# Predições
+predicoes_teste <- predict(modelo, df_teste, type = "response") %>% 
+  as.numeric() %>% 
+  round()
+predicoes_teste
+
+flor1 <- data.frame(Sepal.Length = 6.4, Sepal.Width = 2.8, Petal.Length = 4.6, Petal.Width = 1.8)
+flor2 <- data.frame(Sepal.Length = 6.3, Sepal.Width = 2.5, Petal.Length = 4.1, Petal.Width = 1.7)
+predict(modelo, flor1, type = "response") %>% 
+  as.numeric() %>% 
+  round()
+
+predict(modelo, flor2, type = "response") %>% 
+  as.numeric() %>% 
+  round()
+```
+
+
+### Exercício Computacional - 2
+```{r warning=FALSE}
+confusionMatrix(data = as.factor(predicoes_teste),
+                reference = as.factor(df_teste$especies),
+                positive = "1")
+```
+
+### Exercício Computacional - 3
+```{r warning=FALSE}
+set.seed(100)
+
+# Leitura
+df <- read.csv("../inputs/credit_dataset.csv")
+
+# Normalização e Conversão para factor
+df[["credit.duration.months"]] <- scale(df[["credit.duration.months"]], center = T, scale = T)
+df[["age"]] <- scale(df[["age"]], center = T, scale = T)
+df[["credit.amount"]] <- scale(df[["credit.amount"]], center = T, scale = T)
+
+var_factors <- c('credit.rating', 'account.balance', 'previous.credit.payment.status',
+                      'credit.purpose', 'savings', 'employment.duration', 'installment.rate',
+                      'marital.status', 'guarantor', 'residence.duration', 'current.assets',
+                      'other.credits', 'apartment.type', 'bank.credits', 'occupation', 
+                      'dependents', 'telephone', 'foreign.worker')
+
+for(i in var_factors) {
+  df[[i]] <- as.factor(df[[i]])
+}
+
+
+# Divisão em conjunto de teste e treino 60/40
+divisao_df = sample.split(df$credit.rating, SplitRatio = 0.60)
+df_treino = subset(df, divisao_df == TRUE)
+df_teste = subset(df, divisao_df == FALSE)
+
+
+# Criação do Modelo
+modelo <- glm("credit.rating ~ .", data = df_treino, family = "binomial")
+summary(modelo)
+
+# Predição DF Teste, Matriz de confusão
+predi_teste <- predict(modelo, df_teste, type = "response") %>% 
+                as.numeric() %>% 
+                round() %>% 
+                as.factor()
+
+confusionMatrix(data = predi_teste,
+                reference = as.factor(df_teste$credit.rating),
+                positive = "1")
+
+
+```
+
+
+
