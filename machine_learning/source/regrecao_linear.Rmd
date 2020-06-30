@@ -70,7 +70,7 @@ normaliza_df <- function(df) {
 ### Exercício Computacional - 1
 ```{r warning=FALSE}
 # Leitura DF
-df <- read.table("data_computacional_1.txt", sep = ",") %>% 
+df <- read.table("../inputs/data_computacional_1.txt", sep = ",") %>% 
   rename(population = V1,
          profit = V2)
 
@@ -208,9 +208,16 @@ ggplotly(p)
 # Criação do Modelo
 modelo <- lm("medv ~ crim + rm + lstat", data = df_norm)
 modelo
+
 # Resíduos
+residuos <- modelo$residuals
+media_residuos <- residuos %>% mean()
+media_residuos
 
-
+# Predição
+predicao <- predict(modelo, data.frame(crim = c(0.15), rm = c(5), lstat = 20))
+predicao_norm <- predicao*(max(df$medv) - min(df$medv)) + min(df$medv)
+predicao_norm
 ```
 
 
