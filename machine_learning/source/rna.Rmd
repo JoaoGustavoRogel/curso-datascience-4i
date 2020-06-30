@@ -1,0 +1,141 @@
+---
+title: "Machine Learning - RNA"
+author: "João Gustavo Rogel"
+output:
+  html_document:
+    df_print: paged
+---
+
+Carregando bibliotecas
+
+```{r message=FALSE, warning=FALSE}
+library(DT)
+library(MASS)
+library(dplyr)
+library(stats)
+library(plotly)
+library(readxl)
+library(caTools)
+library(ggplot2)
+library(corrplot)
+library(neuralnet)
+library(reticulate)
+```
+
+### Exercícios Conceituais
+#### 1
+Uma rede neural consiste no agrupamento de modelagens matemáticas de neurônios biológicos. Dessa forma,
+entradas numéricas são ponderadas e combinadas linearmente para a geração de um determinado output.
+
+#### 2
+O algoritmo da retropropagação pode ser separado em duas partes, em uma visão superficial sobre o mesmo.
+A primeira parte consiste na passagem das entradas através da rede e calculo da saída. Na segunda parte
+ocorre o cálculo do gradiente, baseado na saída, e a sua utilização para recalcular todos os pesos da rede
+neural.
+
+#### 3
+As RNAs são aplicadas em diversas áreas, alguns exemplos são: medicina, economia, visão computacional,
+classificação de emails e muitas outras aplicações. Os benefícios de sua aplicação são grandes e podem
+ser análisados com devida atenção em cada área especcificadamente, entretanto um benefício geral é a
+adaptabilidade da RNA e sua alta acurácia.
+
+
+### Exercícios de Múltipla Escolha
+```{r echo=FALSE}
+res_x <- data.frame("Q4" =  c("C"),
+                    "Q5" =  c("A"),
+                    "Q6" =  c("B"),
+                    "Q7" =  c("C"),
+                    "Q8" =  c("D"),
+                    "Q9" =  c("D"),
+                    "Q10" = c("C")
+                    )
+
+datatable(res_x, rownames = FALSE)
+```
+
+#### Funções úteis
+```{r message=FALSE, warning=FALSE}
+
+# Normaliza DF
+normaliza_df <- function(df) {
+  maximo <- apply(df, 2, max) 
+  minimo <- apply(df, 2, min)
+  
+  res <- as.data.frame(scale(df, center = minimo, scale = maximo - minimo))
+  return(res)
+}
+```
+
+
+### Exercício Computacional - 1
+```{r warning=FALSE}
+set.seed(12)
+
+# Leitura DataSet
+df_boston <- MASS::Boston
+
+# Visualizção variável alvo
+p <- df_boston %>% 
+  ggplot(aes(y = medv, x = seq(nrow(df_boston)))) + 
+  geom_point() + 
+  xlab("")
+ggplotly(p)
+
+#  Normalização
+df_norm <- normaliza_df(df_boston)
+
+# Visualização correlação das variáveis
+correl <- cor(df_norm)  
+corrplot(correl,
+         type = "upper",
+         tl.col = "black",
+         method = "number",
+         bg = "lightblue")
+
+#Divisão do DF para teste e treino 70/30
+divisao_df = sample.split(df_norm$medv, SplitRatio = 0.70)
+df_treino = subset(df_norm, divisao_df == TRUE)
+df_teste = subset(df_norm, divisao_df == FALSE)
+
+# Criação do Modelo
+eq <- as.formula("medv ~ crim + zn + indus + chas + nox + rm + age + dis + rad + tax + ptratio + black + lstat")
+rna <- neuralnet(eq, data = df_treino, hidden = c(5,3), linear.output = TRUE)
+
+plot(rna, rep = "best")
+
+
+# Testando Modelo
+predicao <- neuralnet::compute(rna, df_teste)
+
+maximo <- max(df_boston$medv) 
+minimo <- min(df_boston$medv) 
+predicao <- predicao$net.result*(maximo - minimo) + minimo
+df_teste <- df_teste$medv*(maximo - minimo) + minimo
+
+# Erro Quadrático Médio
+eqm <- sum(((df_teste - predicao)^2) )/nrow(predicao)
+eqm
+
+# Realizando plot dos erros
+df_pred <- data.frame(df_teste, predicao)
+
+# Plot dos erros
+p <- df_pred %>% 
+      ggplot(aes(x = df_teste, y = predicao)) + 
+      geom_point() + 
+      stat_smooth() + 
+      xlab('Dados de Teste') + 
+      ylab('Predições')
+
+ggplotly(p)
+```
+
+
+### Exercício Computacional - 2
+
+Pode-se notar que a rede neural obteve um resultado melhor, visto que ela conseguiu identificar uma
+dinâmica entre as variáveis, não se limitando a uma relação linear.
+
+
+
